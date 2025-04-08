@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Product
- * 
+ *
  * @property int $id
  * @property int $shop_id
  * @property int $nm_id
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $category
  * @property string|null $characteristiс
  * @property string|null $description
- * 
+ *
  * @property Shop $shop
  * @property Collection|Review[] $reviews
  * @property Collection|Question[] $questions
@@ -34,7 +34,7 @@ class Product extends Model
 	protected $casts = [
 		'shop_id' => 'int',
 		'nm_id' => 'int',
-		'characteristiс' => 'binary'
+		'characteristiс' => 'json'
 	];
 
 	protected $fillable = [

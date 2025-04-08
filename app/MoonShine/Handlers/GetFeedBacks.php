@@ -37,7 +37,7 @@ class GetFeedBacks extends Handler
             'order'      => 'dateDesc', // Сортировка: dateAsc или dateDesc
         ];
 
-        $response = Http::withToken('eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjUwMjE3djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc1ODYxMjQ5MywiaWQiOiIwMTk1YzlhMC03ZDI2LTcyZWYtOWQ1OS1lYWRiNDRiOWE4YWUiLCJpaWQiOjczMDY0NTM3LCJvaWQiOjM5NDk3NjgsInMiOjEzMCwic2lkIjoiNGRmMThhYTktZWJjNC00Y2U2LTg4MWItZTFlNDg0MzM0ZjVlIiwidCI6ZmFsc2UsInVpZCI6NzMwNjQ1Mzd9.XBa8WN6oEGi_dJEMOb57aHAt1MDYnXGJhSwnbxLi93-DGlP9DiYe1zCmp7ImxTahsc6PQYE9FmXyg9lCPlvWPg')
+        $response = Http::withToken(config('services.wildberries.token'))
             ->get('https://feedbacks-api.wildberries.ru/api/v1/feedbacks', $queryParams);
 
         if (!$response->successful()) {
@@ -55,7 +55,6 @@ class GetFeedBacks extends Handler
         foreach ($jsonData['data']['feedbacks'] as $feedback) {
             // Проверяем наличие и непустоту артикула товара (nmId)
             if (empty($feedback['productDetails']['nmId'])) {
-                MoonShineUI::toast("Отзыв {$feedback['id']} не содержит артикула товара", 'warning');
                 continue; // Пропускаем отзыв без артикула
             }
 
@@ -63,18 +62,16 @@ class GetFeedBacks extends Handler
             $product = Product::firstOrCreate(
                 ['nm_id' => $feedback['productDetails']['nmId']],
                 [
-                    // Здесь необходимо установить shop_id согласно логике вашего приложения.
                     'shop_id'   => 1,
                     'name'      => $feedback['productDetails']['productName'] ?? 'Без названия',
-                    // Используем subjectName для категории или можно задать иное значение
-                    'category'  => $feedback['productDetails']['subjectName'] ?? null,
+                    'category'  => $feedback['subjectName'] ?? null,
+                    'characteristic'=> null,
                     'description' => null,
                 ]
             );
 
             // Если по каким-то причинам товар не создан, пропускаем отзыв
             if (!$product) {
-                MoonShineUI::toast("Не удалось создать товар для отзыва {$feedback['id']}", 'error');
                 continue;
             }
 
@@ -85,29 +82,21 @@ class GetFeedBacks extends Handler
                     'product_id' => $product->id, // Здесь будет сохранён автоинкрементный ID из таблицы products
                     'evaluation' => $feedback['productValuation'] ?? null,
                     'name_user'  => $feedback['userName'] ?? null,
-                    'text'       => $feedback['text'] ?? null,
                     'photos'     => isset($feedback['photoLinks'])
                         ? json_encode($feedback['photoLinks'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
                         : null,
                     'videos'     => $feedback['video'] ?? null,
-                    'sentiment'  => null, // Поле не заполняем
+                    'sentiment'  => null,
                     'topic_review_id' => null,
-                    'status'     => 'новый',
                     'pluses'     => $feedback['pros'] ?? null,
                     'cons'       => $feedback['cons'] ?? null,
+                    'comment_text'=> $feedback['text'] ?? null,
+                    'response'   => null,
+                    'status'     => 'новый',
                 ]
             );
         }
-
-
-        // Преобразуем полученные данные в отформатированный JSON с сохранением кириллицы
-        $content = json_encode($jsonData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        return response()->streamDownload(function () use ($content) {
-            echo $content;
-        }, 'feedbacks.json', [
-            'Content-Type' => 'application/json',
-        ]);
+        return back();
     }
 
     public function getButton(): ActionButtonContract

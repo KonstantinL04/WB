@@ -13,6 +13,10 @@ use App\MoonShine\Resources\MoonShineUserResource;
 use App\MoonShine\Resources\MoonShineUserRoleResource;
 use App\MoonShine\Resources\PostResource;
 use App\MoonShine\Resources\ReviewResource;
+use App\MoonShine\Resources\ShopResource;
+use App\MoonShine\Resources\UserResource;
+use App\MoonShine\Pages\AnswerReviewPage;
+use App\MoonShine\Resources\QuestionResource;
 
 class MoonShineServiceProvider extends ServiceProvider
 {
@@ -31,9 +35,13 @@ class MoonShineServiceProvider extends ServiceProvider
                 MoonShineUserRoleResource::class,
                 PostResource::class,
                 ReviewResource::class,
+                ShopResource::class,
+                UserResource::class,
+                QuestionResource::class,
             ])
             ->pages([
                 ...$config->getPages(),
+                AnswerReviewPage::class,
             ])
         ;
     }

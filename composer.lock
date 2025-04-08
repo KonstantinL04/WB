@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4c42724c1920b5f8cf8bed819093e1be",
+    "content-hash": "8d68d25c6a55b2e897abcac72c0c56db",
     "packages": [
         {
             "name": "brick/math",
@@ -442,6 +442,56 @@
                 }
             ],
             "time": "2024-10-09T13:47:03+00:00"
+        },
+        {
+            "name": "edvardpotter/gigachat-php-sdk",
+            "version": "1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/edvardpotter/gigachat-php-sdk.git",
+                "reference": "b51f6307cb02c9d3a3f96ed1a702ed7f5394b477"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/edvardpotter/gigachat-php-sdk/zipball/b51f6307cb02c9d3a3f96ed1a702ed7f5394b477",
+                "reference": "b51f6307cb02c9d3a3f96ed1a702ed7f5394b477",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "guzzlehttp/guzzle": "^7.0",
+                "php": ">=7.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Edvardpotter\\GigaChat\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "edvardpotter",
+                    "email": "eduard1997@bk.ru"
+                }
+            ],
+            "description": "GigaChat API SDK for PHP projects",
+            "keywords": [
+                "gigachat",
+                "gigachat api client",
+                "gigachat php",
+                "gigachat php api",
+                "gigachat sdk",
+                "gigachat sdk php"
+            ],
+            "support": {
+                "issues": "https://github.com/edvardpotter/gigachat-php-sdk/issues",
+                "source": "https://github.com/edvardpotter/gigachat-php-sdk/tree/1.0.2"
+            },
+            "time": "2024-03-09T16:36:40+00:00"
         },
         {
             "name": "egulias/email-validator",
@@ -2312,6 +2362,67 @@
                 }
             ],
             "time": "2025-04-04T14:09:42+00:00"
+        },
+        {
+            "name": "moonshine/ru",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/moonshine-software/ru.git",
+                "reference": "3f77be40b34ad779ff27159a4a0c92280bdeeabc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/moonshine-software/ru/zipball/3f77be40b34ad779ff27159a4a0c92280bdeeabc",
+                "reference": "3f77be40b34ad779ff27159a4a0c92280bdeeabc",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2|^8.3"
+            },
+            "conflict": {
+                "laravel/framework": "<10.48.0",
+                "moonshine/moonshine": "<3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "MoonShine\\Ru\\Providers\\RuServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "MoonShine\\Ru\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Danil Shutsky",
+                    "email": "info@cutcode.ru",
+                    "homepage": "https://cutcode.dev"
+                }
+            ],
+            "description": "Russian localization for MoonShine",
+            "homepage": "https://moonshine-laravel.com",
+            "keywords": [
+                "admin",
+                "dashboard",
+                "laravel",
+                "localization",
+                "moonshine",
+                "ru"
+            ],
+            "support": {
+                "issues": "https://github.com/moonshine-software/ru/issues",
+                "source": "https://github.com/moonshine-software/ru"
+            },
+            "time": "2024-07-27T15:57:26+00:00"
         },
         {
             "name": "nesbot/carbon",

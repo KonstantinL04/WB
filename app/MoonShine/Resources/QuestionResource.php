@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
-use App\MoonShine\Handlers\ChatGPTHandler;
-use App\MoonShine\Handlers\GetFeedBacks;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Review;
+use App\MoonShine\Handlers\ChatGPTHandler;
+use App\MoonShine\Handlers\ChatGPTQuestionsHandler;
+use App\MoonShine\Handlers\GetFeedBacks;
+use App\MoonShine\Handlers\GetQuestions;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\Question;
 
-use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
@@ -21,13 +23,13 @@ use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Text;
 
 /**
- * @extends ModelResource<Review>
+ * @extends ModelResource<Question>
  */
-class ReviewResource extends ModelResource
+class QuestionResource extends ModelResource
 {
-    protected string $model = Review::class;
+    protected string $model = Question::class;
 
-    protected string $title = 'Отзывы';
+    protected string $title = 'Вопросы';
 
     /**
      * @return list<FieldContract>
@@ -37,11 +39,7 @@ class ReviewResource extends ModelResource
         return [
             ID::make()->sortable(),
             Text::make('Наименование товара', 'product.name')->sortable(),
-            Number::make('Оценка', 'evaluation')->sortable()
-                ->stars()
-                ->min(1)
-                ->max(5)
-                ->step(1),
+            Text::make('Вопрос', 'question')->sortable(),
             Text::make('Статус', 'status')->sortable(),
         ];
     }
@@ -54,8 +52,6 @@ class ReviewResource extends ModelResource
                     ->method('processReview')
                     ->icon('s.play')
             );
-
-
     }
 
     /**
@@ -78,25 +74,12 @@ class ReviewResource extends ModelResource
         return [
             Text::make('Наименование товара', 'product.name'),
             Text::make('Сформированный ответ', 'response'),
-            Number::make('Оценка', 'evaluation')
-                ->stars()
-                ->min(1)
-                ->max(5)
-                ->step(1),
-            Text::make('~ Комментарий', 'comment_text'),
-            Text::make('+ Достоинства', 'pluses'),
-            Text::make('- Недостатки', 'cons'),
+            Text::make('Вопрос', 'question')->sortable(),
             Text::make('Клиент', 'name_user'),
-
-//            Text::make('Фото', 'photos'),
-//            Text::make('Видео', 'videos'),
             Text::make('Артикул', 'product.nm_id'),
             Text::make('Статус', 'status'),
-
-
         ];
     }
-
 
     /**
      * @param Review $item
@@ -111,8 +94,8 @@ class ReviewResource extends ModelResource
     protected function handlers(): ListOf
     {
         return parent::handlers()
-            ->add(new GetFeedBacks('Получить отзывы'))
-            ->add(new ChatGPTHandler('Сгенерировать ответы'));
+            ->add(new GetQuestions('Получить вопросы'))
+            ->add(new ChatGPTQuestionsHandler('Сгенерировать ответы'));
 
     }
 }

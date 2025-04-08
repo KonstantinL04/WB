@@ -35,4 +35,29 @@ return [
         ],
     ],
 
+    'wildberries' => [
+        'token' => env('WILDBERRIES_API_TOKEN'),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model'   => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
+    'deepseek' => [
+        'api_key' => env('DEEPSEEK_API_KEY'),
+        'model' => 'deepseek-chat',
+    ],
+
+    'gigachat' => [
+        'client_id'     => env('GIGACHAT_CLIENT_ID'),
+        'client_secret' => env('GIGACHAT_CLIENT_SECRET'),
+        'scope'         => env('GIGACHAT_SCOPE', 'GIGACHAT_API_PERS'),
+    ],
+
+    'proxyapi' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'base_url' => 'https://api.proxyapi.ru/openai/v1',
+        'model' => 'gpt-4o-mini', // или другая модель по вашему выбору
+    ],
 ];

@@ -33,6 +33,9 @@ use MoonShine\UI\Components\{Breadcrumbs,
 use App\MoonShine\Resources\PostResource;
 use MoonShine\MenuManager\MenuItem;
 use App\MoonShine\Resources\ReviewResource;
+use App\MoonShine\Resources\ShopResource;
+use App\MoonShine\Resources\UserResource;
+use App\MoonShine\Resources\QuestionResource;
 
 final class MoonShineLayout extends AppLayout
 {
@@ -46,9 +49,11 @@ final class MoonShineLayout extends AppLayout
     protected function menu(): array
     {
         return [
+            MenuItem::make('Отзывы', ReviewResource::class),
+            MenuItem::make('Вопросы', QuestionResource::class),
             ...parent::menu(),
-            MenuItem::make('Posts', PostResource::class),
-            MenuItem::make('Reviews', ReviewResource::class),
+            MenuItem::make('Магазины', ShopResource::class),
+            MenuItem::make('Пользователи', UserResource::class),
         ];
     }
 

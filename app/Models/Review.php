@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Review
- * 
+ *
  * @property int $id
  * @property string $review_id
  * @property int $product_id
@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $comment_text
  * @property string|null $response
  * @property string|null $status
- * 
+ *
  * @property Product $product
  * @property ReviewTopic|null $review_topic
  *
@@ -39,7 +39,9 @@ class Review extends Model
 	protected $casts = [
 		'product_id' => 'int',
 		'evaluation' => 'int',
-		'topic_review_id' => 'int'
+		'topic_review_id' => 'int',
+        'photos' => 'array',
+        'videos' => 'array',
 	];
 
 	protected $fillable = [
@@ -60,7 +62,7 @@ class Review extends Model
 
 	public function product()
 	{
-		return $this->belongsTo(Product::class);
+		return $this->belongsTo(Product::class, 'product_id');
 	}
 
 	public function review_topic()
