@@ -30,6 +30,7 @@ return [
     'use_notifications' => true,
     'use_database_notifications' => true,
     'use_profile' => true,
+    'html' => true,
 
     // Routing
     'domain' => env('MOONSHINE_DOMAIN'),
@@ -91,7 +92,7 @@ return [
     ],
 
     // Localizations
-    'locale' => 'en',
+    'locale' => 'ru',
     'locale_key' => ChangeLocale::KEY,
     'locales' => [
         // en

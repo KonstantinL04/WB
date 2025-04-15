@@ -30,8 +30,9 @@ class ShopResource extends ModelResource
     protected function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
-            Text::make('Название магазина', 'name'),
+            Text::make('Номер пользователя', 'user_id')->sortable(),
+            Text::make('Название магазина', 'name')->sortable(),
+
         ];
     }
 
@@ -56,7 +57,9 @@ class ShopResource extends ModelResource
     protected function detailFields(): iterable
     {
         return [
-            ID::make(),
+            Text::make('Номер пользователя', 'user_id'),
+            Text::make('Название магазина', 'name'),
+            Password::make('API-ключ', 'api_key'),
         ];
     }
 

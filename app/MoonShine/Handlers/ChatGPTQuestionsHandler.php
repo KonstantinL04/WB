@@ -9,6 +9,7 @@ use App\Models\Question;
 use App\Models\QuestionsTopic;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\UI\Exceptions\ActionButtonException;
 use MoonShine\Laravel\MoonShineUI;
 use MoonShine\Laravel\Handlers\Handler;
@@ -42,7 +43,7 @@ class ChatGPTQuestionsHandler extends Handler
         $topicsString = implode(', ', $availableTopics);
 
         // Выбираем вопросы для анализа (например, те, у которых статус "новый")
-        $questions = Question::where('status', 'новый')->get();
+        $questions = Question::where('status', 'Тест')->get();
 
         foreach ($questions as $questionItem) {
             $productName = $questionItem->product ? $questionItem->product->name : 'Не указано';
@@ -117,6 +118,7 @@ PROMPT;
                     $questionItem->response = $analysis['reply'] ?? null;
                     // В данном случае тональность не требуется, поэтому поле sentiment оставляем как null
                     $questionItem->status = 'Сформирован';
+                    MoonShineUI::toast('Ответы успешно импортированы', ToastType::SUCCESS);
                     $questionItem->save();
                 } else {
                     Log::error('JSON decoding error in Question processing', [

@@ -42,6 +42,8 @@ class Review extends Model
 		'topic_review_id' => 'int',
         'photos' => 'array',
         'videos' => 'array',
+        'created_date' => 'datetime',
+        'published_date' => 'datetime',
 	];
 
 	protected $fillable = [
@@ -57,7 +59,9 @@ class Review extends Model
 		'cons',
 		'comment_text',
 		'response',
-		'status'
+		'status',
+        'created_date',
+        'published_date',
 	];
 
 	public function product()

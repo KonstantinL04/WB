@@ -49,11 +49,15 @@ final class MoonShineLayout extends AppLayout
     protected function menu(): array
     {
         return [
-            MenuItem::make('Отзывы', ReviewResource::class),
-            MenuItem::make('Вопросы', QuestionResource::class),
+            MenuItem::make('Отзывы', ReviewResource::class)
+             ->icon('chat-bubble-bottom-center-text'),
+            MenuItem::make('Вопросы', QuestionResource::class)
+            ->icon('question-mark-circle'),
+            MenuItem::make('Магазины', ShopResource::class)
+            ->icon('shopping-bag'),
+            MenuItem::make('Пользователи', UserResource::class)
+            ->icon('user-group'),
             ...parent::menu(),
-            MenuItem::make('Магазины', ShopResource::class),
-            MenuItem::make('Пользователи', UserResource::class),
         ];
     }
 

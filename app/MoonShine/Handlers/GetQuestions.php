@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Question;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\UI\Exceptions\ActionButtonException;
 use MoonShine\Laravel\MoonShineUI;
 use MoonShine\Laravel\Handlers\Handler;
@@ -40,19 +41,18 @@ class GetQuestions extends Handler
 
         // Получаем вопросы из API Wildberries, используя API-ключ из .env (через config)
         $response = Http::withToken(config('services.wildberries.token'))
-            ->whereNull('sentiment')
-            ->whereNull('topic_review_id')
+//            ->whereNull('topic_review_id')
             ->get('https://feedbacks-api.wildberries.ru/api/v1/questions', $queryParams);
 
         if (! $response->successful()) {
-//            MoonShineUI::toast('Ошибка при получении данных', 'error');
+            MoonShineUI::toast('Ошибка при получении данных', ToastType::ERROR);
             return back();
         }
 
         $jsonData = $response->json();
 
         if (!isset($jsonData['data']['questions']) || !is_array($jsonData['data']['questions'])) {
-//            MoonShineUI::toast('Неверная структура JSON', 'error');
+            MoonShineUI::toast('Неверная структура JSON', ToastType::ERROR);
             return back();
         }
 
@@ -85,7 +85,6 @@ class GetQuestions extends Handler
                     'product_id' => $product->id, // Сохраняем автоинкрементный ID товара
                     'name_user'  => $feedback['userName'] ?? null,
                     'question'   => $feedback['text'] ?? null,  // Текст вопроса
-                    'sentiment'  => null,
                     'topic_review_id' => null,
                     'response'   => null,
                     'status'     => 'новый',
@@ -93,7 +92,7 @@ class GetQuestions extends Handler
             );
         }
 
-//        MoonShineUI::toast('Вопросы успешно импортированы', 'success');
+        MoonShineUI::toast('Вопросы успешно импортированы', ToastType::SUCCESS);
         return back();
         // Преобразуем полученные данные в отформатированный JSON с сохранением кириллицы
 //        $content = json_encode($jsonData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
