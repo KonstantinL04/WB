@@ -16,7 +16,7 @@ use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\UI\Components\ActionButton;
 use Symfony\Component\HttpFoundation\Response;
 
-class ChatGPTHandler extends Handler
+class ChatGPTReviewHandler extends Handler
 {
     public function __construct(string $label = 'Начать формирование')
     {

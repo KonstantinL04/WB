@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Question
- * 
+ *
  * @property int $id
  * @property string $question_id
  * @property int $product_id
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $created_date
  * @property ARRAY|null $published_date
  * @property int|null $user_id
- * 
+ *
  * @property Product $product
  * @property QuestionsTopic|null $questions_topic
  *
@@ -39,7 +39,7 @@ class Question extends Model
 		'product_id' => 'int',
 		'topic_review_id' => 'int',
 		'created_date' => 'datetime',
-		'published_date' => 'ARRAY',
+		'published_date' => 'datetime',
 		'user_id' => 'int'
 	];
 

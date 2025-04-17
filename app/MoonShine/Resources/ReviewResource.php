@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
-use App\MoonShine\Handlers\ChatGPTHandler;
+use App\MoonShine\Handlers\ChatGPTReviewHandler;
 use App\MoonShine\Handlers\GetFeedBacks;
+use App\MoonShine\Handlers\PublishResponseReviews;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Review;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -143,7 +144,7 @@ class ReviewResource extends ModelResource
             ->prepend(
                 ActionButton::make('')
                     ->canSee(fn($item) => $item->status === 'Новый')
-                    ->method('chatGPTHandler') // вызываем нужный обработчик, например ChatGPTHandler
+                    ->method('chatGPTHandler') // вызываем нужный обработчик, например ChatGPTReviewHandler
                     ->icon('s.play')
                     ->withConfirm(
                         title: 'Подтверждение',
@@ -214,8 +215,6 @@ class ReviewResource extends ModelResource
                         })
                         ->sortable(),
                 ])->columnSpan(4)
-
-
             ])
         ];
     }
@@ -275,7 +274,7 @@ class ReviewResource extends ModelResource
         return parent::detailButtons()
             ->add(
                 ActionButton::make('Сгенерировать ответ')
-                    ->method('chatGPTHandler')
+                    ->method('chatGPTReviewHandler')
                     ->icon('s.play')
                     ->canSee(fn($item) => $item->status === 'Новый')
                     ->withConfirm(
@@ -342,7 +341,7 @@ class ReviewResource extends ModelResource
 //    {
 //        return parent::handlers()
 //            ->add(new GetFeedBacks('Получить отзывы'))
-//            ->add(new ChatGPTHandler('Сгенерировать ответы'));
+//            ->add(new ChatGPTReviewHandler('Сгенерировать ответы'));
 //
 //    }
 
@@ -356,10 +355,10 @@ class ReviewResource extends ModelResource
     public function getChatGPT(MoonShineRequest $request): Response
     {
         // Создаём экземпляр класса GetFeedBacks и вызываем его метод handle()
-        $handler = new ChatGPTHandler('Начать формирование');
+        $handler = new ChatGPTReviewHandler('Начать формирование');
         return $handler->handle();
     }
-    public function chatGPTHandler(MoonShineRequest $request): MoonShineJsonResponse
+    public function chatGPTReviewHandler(MoonShineRequest $request): MoonShineJsonResponse
     {
         /** @var Review $review */
         $review = $request->getResource()->getItem();
@@ -368,42 +367,14 @@ class ReviewResource extends ModelResource
             return MoonShineJsonResponse::make()->toast('Отзыв не найден', ToastType::ERROR);
         }
 
-        ChatGPTHandler::processReview($review);
+        ChatGPTReviewHandler::processReview($review);
 
         return MoonShineJsonResponse::make()->toast('Ответ успешно сгенерирован', ToastType::SUCCESS);
     }
-    public function publishAnswer(MoonShineRequest $request): MoonShineJsonResponse
+    public function publishAnswer(MoonShineRequest $request)
     {
-        /** @var Review $review */
-        $review = $request->getResource()->getItem();
-
-        $reviewId = $review->review_id; // Убедитесь, что это поле есть в БД и заполнено
-        $replyText = $review->response; // Ответ, который сгенерировала нейросеть или ввёл пользователь
-
-        if (empty($reviewId) || empty($replyText)) {
-            return MoonShineJsonResponse::make()->toast('Нет ID отзыва или текста ответа', ToastType::ERROR);
-        }
-
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.wildberries.token'),
-            'Content-Type' => 'application/json',
-        ])->post('https://feedbacks-api.wildberries.ru/api/v1/feedbacks/answer', [
-            'id' => $reviewId,
-            'text' => $replyText,
-        ]);
-
-        if ($response->successful()) {
-            $review->status = 'Опубликован';
-            $review->save();
-
-            return MoonShineJsonResponse::make()->toast('Ответ опубликован успешно!', ToastType::SUCCESS);
-        }
-
-        Log::error('Ошибка при публикации ответа на WB', [
-            'status' => $response->status(),
-            'body' => $response->body(),
-        ]);
-
-        return MoonShineJsonResponse::make()->toast('Ошибка при отправке ответа', ToastType::ERROR);
+        // Создаём и запускаем Handler
+        $handler = new PublishResponseReviews('Опубликовать ответ');
+        return $handler->handle();
     }
 }

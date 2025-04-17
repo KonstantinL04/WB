@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\MoonShine\Resources;
 
 use App\Models\Review;
-use App\MoonShine\Handlers\ChatGPTHandler;
+use App\MoonShine\Handlers\ChatGPTReviewHandler;
 use App\MoonShine\Handlers\ChatGPTQuestionsHandler;
 use App\MoonShine\Handlers\GetFeedBacks;
 use App\MoonShine\Handlers\GetQuestions;
+use App\MoonShine\Handlers\PublishResponseQuestions;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Question;
@@ -170,7 +171,7 @@ class QuestionResource extends ModelResource
             ->prepend(
                 ActionButton::make('')
                     ->canSee(fn($item) => $item->status === 'Новый')
-                    ->method('chatGPTHandlerQuestion') // вызываем нужный обработчик, например ChatGPTHandler
+                    ->method('chatGPTHandlerQuestion') // вызываем нужный обработчик, например ChatGPTReviewHandler
                     ->icon('s.play')
                     ->withConfirm(
                         title: 'Подтверждение',
@@ -362,41 +363,9 @@ class QuestionResource extends ModelResource
         return MoonShineJsonResponse::make()->toast('Ответ успешно сгенерирован', ToastType::SUCCESS);
     }
 
-    public function publishAnswer(MoonShineRequest $request): MoonShineJsonResponse
+    public function publishAnswer(MoonShineRequest $request)
     {
-        /** @var Question $question */
-        $question = $request->getResource()->getItem();
-
-        $questionId = $question->question_id; // Убедитесь, что это поле есть в БД и заполнено
-        $replyText = $question->response; // Ответ, который сгенерировала нейросеть или ввёл пользователь
-
-        if (empty($questionId) || empty($replyText) || $question->status !== 'Сформирован') {
-            return MoonShineJsonResponse::make()->toast('Нет ID вопроса или текста ответа', ToastType::ERROR);
-        }
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.wildberries.token'),
-            'Content-Type'  => 'application/json',
-        ])->patch('https://feedbacks-api.wildberries.ru/api/v1/questions', [
-            'id' => $questionId,
-            'text' => $replyText,
-            'wasViewed' => true,
-        ]);
-
-        if ($response->successful()) {
-            $question->status = 'Опубликован';
-            $question->save();
-
-            return MoonShineJsonResponse::make()
-                ->toast('Ответ на вопрос успешно опубликован', ToastType::SUCCESS);
-        }
-
-        Log::error('Ошибка при отправке ответа на вопрос', [
-            'question_id' => $questionId,
-            'status' => $response->status(),
-            'body' => $response->body(),
-        ]);
-
-        return MoonShineJsonResponse::make()
-            ->toast('Ошибка при отправке ответа на вопрос', ToastType::ERROR);
+        $handler = new PublishResponseQuestions('Опубликовать ответ');
+        return $handler->handle();
     }
 }

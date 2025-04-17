@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\MoonShine\Controllers;
 
 use App\Models\Review;
-use App\MoonShine\Handlers\ChatGPTHandler;
+use App\MoonShine\Handlers\ChatGPTReviewHandler;
 use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\Http\Controllers\MoonShineController;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,7 +30,7 @@ final class ReviewController extends MoonShineController
         }
 
         // Вызываем обработчик для генерации ответа по конкретному отзыву
-        ChatGPTHandler::processReview($review);
+        ChatGPTReviewHandler::processReview($review);
 
         $this->toast('Ответ успешно сгенерирован', 'success');
         return back();
