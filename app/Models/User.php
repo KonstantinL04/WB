@@ -21,8 +21,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property int|null $role_id
  * 
+ * @property MoonshineUserRole|null $moonshine_user_role
  * @property Collection|Shop[] $shops
+ * @property Collection|Review[] $reviews
  *
  * @package App\Models
  */
@@ -31,7 +34,8 @@ class User extends Model
 	protected $table = 'users';
 
 	protected $casts = [
-		'email_verified_at' => 'datetime'
+		'email_verified_at' => 'datetime',
+		'role_id' => 'int'
 	];
 
 	protected $hidden = [
@@ -44,12 +48,23 @@ class User extends Model
 		'email',
 		'email_verified_at',
 		'password',
-		'remember_token'
+		'remember_token',
+		'role_id'
 	];
+
+	public function moonshine_user_role()
+	{
+		return $this->belongsTo(MoonshineUserRole::class, 'role_id');
+	}
 
 	public function shops()
 	{
 		return $this->belongsToMany(Shop::class, 'shop_users')
 					->withPivot('id');
+	}
+
+	public function reviews()
+	{
+		return $this->hasMany(Review::class);
 	}
 }

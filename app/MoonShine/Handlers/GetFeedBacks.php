@@ -31,7 +31,7 @@ class GetFeedBacks extends Handler
      *
      * @return int
      */
-    private function fetchFeedbackCount(): int
+    protected function fetchFeedbackCount(): int
     {
         // Устанавливаем период "за все время": с начала эпохи Unix до текущего момента
         $dateFrom = 0;
@@ -52,23 +52,33 @@ class GetFeedBacks extends Handler
         }
 
         $jsonData = $response->json();
-        // Предполагается, что API возвращает значение по ключу "count"
+        // Предполагается, что API возвращает значение по ключу "data"
         return isset($jsonData['data']) ? (int)$jsonData['data'] : 0;
     }
 
     /**
-     * @throws ActionButtonException
+     * Метод для получения доступного количества отзывов.
+     *
+     * @return int
+     */
+    public function getAvailableCount(): int
+    {
+        return $this->fetchFeedbackCount();
+    }
+
+    /**
+     * @throws \MoonShine\UI\Exceptions\ActionButtonException
      */
     public function handle(): Response
     {
         // Получаем количество отзывов для импорта из переданных данных, по умолчанию 20
-        $reviewsCount = (int) request()->input('feedback_count', 20);
+        $reviewsCount = (int) request()->input('feedback_count', 30);
 
         $queryParams = [
             'isAnswered' => false,       // Обрабатываем необработанные отзывы
             'take'       => $reviewsCount, // Количество отзывов для получения
-            'skip'       => 0,           // Количество пропускаемых отзывов
-            'order'      => 'dateDesc',  // Сортировка: dateAsc или dateDesc
+            'skip'       => 0,             // Количество пропускаемых отзывов
+            'order'      => 'dateDesc',    // Сортировка: dateAsc или dateDesc
         ];
 
         $response = Http::withToken(config('services.wildberries.token'))
@@ -92,6 +102,11 @@ class GetFeedBacks extends Handler
                 continue;
             }
 
+            // Проверяем, существует ли отзыв по review_id (из JSON это feedback['id'])
+            if (Review::where('review_id', $feedback['id'])->exists()) {
+                continue;
+            }
+
             // Ищем или создаём товар по nmId
             $product = Product::firstOrCreate(
                 ['nm_id' => $feedback['productDetails']['nmId']],
@@ -112,51 +127,29 @@ class GetFeedBacks extends Handler
             Review::updateOrCreate(
                 ['review_id' => $feedback['id']],
                 [
-                    'product_id'    => $product->id,
-                    'evaluation'    => $feedback['productValuation'] ?? null,
-                    'name_user'     => $feedback['userName'] ?? null,
-                    'photos'        => isset($feedback['photoLinks'])
+                    'product_id'     => $product->id,
+                    'evaluation'     => $feedback['productValuation'] ?? null,
+                    'name_user'      => $feedback['userName'] ?? null,
+                    'photos'         => isset($feedback['photoLinks'])
                         ? json_encode($feedback['photoLinks'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
                         : null,
-                    'videos'        => $feedback['video'] ?? null,
-                    'sentiment'     => null,
+                    'videos'         => $feedback['video'] ?? null,
+                    'sentiment'      => null,
                     'topic_review_id'=> null,
-                    'pluses'        => $feedback['pros'] ?? null,
-                    'cons'          => $feedback['cons'] ?? null,
-                    'comment_text'  => $feedback['text'] ?? null,
-                    'response'      => null,
-                    'status'        => 'новый',
-                    'created_date'  => isset($feedback['createdDate']) ? Carbon::parse($feedback['createdDate']) : null,
+                    'pluses'         => $feedback['pros'] ?? null,
+                    'cons'           => $feedback['cons'] ?? null,
+                    'comment_text'   => $feedback['text'] ?? null,
+                    'response'       => null,
+                    'status'         => 'Новый',
+                    'created_date'   => isset($feedback['createdDate']) ? Carbon::parse($feedback['createdDate']) : null,
                 ]
             );
         }
         MoonShineUI::toast('Отзывы успешно импортированы', ToastType::SUCCESS);
         return back();
     }
-
     public function getButton(): ActionButtonContract
     {
-        $availableCount = $this->fetchFeedbackCount();
-
-        return ActionButton::make($this->getLabel(), $this->getUrl())
-            ->withConfirm(
-                'Импортировать отзывы',
-                // Вторым аргументом — Closure, возвращающее HTML
-                function () use ($availableCount) {
-                    return <<<HTML
-                    <p>Доступно отзывов: <strong>{$availableCount}</strong></p>
-                    <p>Укажите, сколько отзывов необходимо получить:</p>
-                    <input
-                        type="number"
-                        name="feedback_count"
-                        value="20"
-                        min="1"
-                        max="{$availableCount}"
-                        style="width:100%;"
-                    />
-                HTML;
-                },
-                'Импортировать'
-            );
+        return ActionButton::make($this->getLabel(), $this->getUrl());
     }
 }

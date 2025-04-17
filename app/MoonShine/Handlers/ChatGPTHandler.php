@@ -64,12 +64,8 @@ class ChatGPTHandler extends Handler
             "Достоинства: " . ($review->pluses ?: "нет") . "\n" .
             "Недостатки: " . ($review->cons ?: "нет") . "\n" .
             "Комментарий: " . ($review->comment_text ?: "нет");
-
         $clientName = $review->name_user ?: 'Уважаемый клиент';
-        $greeting = "Здравствуйте, {$clientName}!";
-
         $evaluation = $review->evaluation ?? 'Оценка не указана';
-
         $prompt = <<<PROMPT
 Доступные тематики: {$topicsString}.
 

@@ -6,11 +6,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Review
- *
+ * 
  * @property int $id
  * @property string $review_id
  * @property int $product_id
@@ -25,9 +26,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $comment_text
  * @property string|null $response
  * @property string|null $status
- *
+ * @property Carbon|null $created_date
+ * @property ARRAY|null $published_date
+ * @property int|null $user_id
+ * 
  * @property Product $product
  * @property ReviewTopic|null $review_topic
+ * @property User|null $user
  *
  * @package App\Models
  */
@@ -40,10 +45,9 @@ class Review extends Model
 		'product_id' => 'int',
 		'evaluation' => 'int',
 		'topic_review_id' => 'int',
-        'photos' => 'array',
-        'videos' => 'array',
-        'created_date' => 'datetime',
-        'published_date' => 'datetime',
+		'created_date' => 'datetime',
+		'published_date' => 'ARRAY',
+		'user_id' => 'int'
 	];
 
 	protected $fillable = [
@@ -60,17 +64,23 @@ class Review extends Model
 		'comment_text',
 		'response',
 		'status',
-        'created_date',
-        'published_date',
+		'created_date',
+		'published_date',
+		'user_id'
 	];
 
 	public function product()
 	{
-		return $this->belongsTo(Product::class, 'product_id');
+		return $this->belongsTo(Product::class);
 	}
 
 	public function review_topic()
 	{
 		return $this->belongsTo(ReviewTopic::class, 'topic_review_id');
+	}
+
+	public function user()
+	{
+		return $this->belongsTo(User::class);
 	}
 }

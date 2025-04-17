@@ -6,6 +6,8 @@ namespace App\MoonShine\Handlers;
 
 use App\Models\Product;
 use App\Models\Question;
+use App\Models\Review;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use MoonShine\Support\Enums\ToastType;
@@ -24,27 +26,66 @@ class GetQuestions extends Handler
     }
 
     /**
+     * Получает количество доступных необработанных вопросов "за все время".
+     *
+     * @return int
+     */
+    protected function fetchQuestionsCount(): int
+    {
+        // Устанавливаем период "за все время": с начала эпохи Unix до текущего момента
+        $dateFrom = 0;
+        $dateTo = Carbon::now()->timestamp;
+
+        $queryParams = [
+            'dateFrom'   => $dateFrom,
+            'dateTo'     => $dateTo,
+            'isAnswered' => false, // Отбираем необработанные вопросы
+        ];
+
+        // Предполагаем, что API для вопросов предоставляет endpoint "/questions/count"
+        $response = Http::withToken(config('services.wildberries.token'))
+            ->get('https://feedbacks-api.wildberries.ru/api/v1/questions/count', $queryParams);
+
+        if (!$response->successful()) {
+            // Если не удалось получить данные, возвращаем 0
+            return 0;
+        }
+
+        $jsonData = $response->json();
+        // Предполагается, что API возвращает значение по ключу "data"
+        return isset($jsonData['data']) ? (int)$jsonData['data'] : 0;
+    }
+
+    /**
+     * Метод для получения доступного количества вопросов.
+     *
+     * @return int
+     */
+    public function getAvailableCount(): int
+    {
+        return $this->fetchQuestionsCount();
+    }
+
+    /**
      * @throws ActionButtonException
      */
     public function handle(): Response
     {
-        if (! $this->hasResource()) {
-            throw ActionButtonException::resourceRequired();
-        }
+        // Получаем количество вопросов для импорта из переданных данных, по умолчанию 20
+        $questionsCount = (int) request()->input('question_count', 30);
 
         $queryParams = [
             'isAnswered' => false,      // Импортируем вопросы, на которые ещё не дан ответ
-            'take'       => 10,          // Количество вопросов (максимум 5000)
+            'take'       => $questionsCount, // Количество вопросов для получения
             'skip'       => 0,           // Количество пропускаемых вопросов
             'order'      => 'dateDesc',  // Сортировка: dateAsc или dateDesc
         ];
 
-        // Получаем вопросы из API Wildberries, используя API-ключ из .env (через config)
+        // Получаем вопросы из API Wildberries, используя API-ключ из конфигурации
         $response = Http::withToken(config('services.wildberries.token'))
-//            ->whereNull('topic_review_id')
             ->get('https://feedbacks-api.wildberries.ru/api/v1/questions', $queryParams);
 
-        if (! $response->successful()) {
+        if (!$response->successful()) {
             MoonShineUI::toast('Ошибка при получении данных', ToastType::ERROR);
             return back();
         }
@@ -59,6 +100,11 @@ class GetQuestions extends Handler
         foreach ($jsonData['data']['questions'] as $feedback) {
             // Проверяем наличие артикула товара (nmId) в productDetails
             if (empty($feedback['productDetails']['nmId'])) {
+                continue;
+            }
+
+            // Проверяем, существует ли вопрос по question_id (из JSON это feedback['id'])
+            if (Question::where('question_id', $feedback['id'])->exists()) {
                 continue;
             }
 
@@ -78,30 +124,24 @@ class GetQuestions extends Handler
                 continue;
             }
 
-            // Импортируем вопрос с использованием модели Question
+            // Импортируем вопрос, используя модель Question
             Question::updateOrCreate(
                 ['question_id' => $feedback['id']],
                 [
-                    'product_id' => $product->id, // Сохраняем автоинкрементный ID товара
-                    'name_user'  => $feedback['userName'] ?? null,
-                    'question'   => $feedback['text'] ?? null,  // Текст вопроса
+                    'product_id'      => $product->id, // Сохраняем автоинкрементный ID товара
+                    'name_user'       => $feedback['userName'] ?? null,
+                    'question'        => $feedback['text'] ?? null,  // Текст вопроса
+                    'sentiment'       => null,
                     'topic_review_id' => null,
-                    'response'   => null,
-                    'status'     => 'новый',
+                    'response'        => null,
+                    'status'          => 'Новый',
+                    'created_date'    => isset($feedback['createdDate']) ? Carbon::parse($feedback['createdDate']) : null,
                 ]
             );
         }
 
         MoonShineUI::toast('Вопросы успешно импортированы', ToastType::SUCCESS);
         return back();
-        // Преобразуем полученные данные в отформатированный JSON с сохранением кириллицы
-//        $content = json_encode($jsonData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-//
-//        return response()->streamDownload(function () use ($content) {
-//            echo $content;
-//        }, 'questions.json', [
-//            'Content-Type' => 'application/json',
-//        ]);
     }
 
     public function getButton(): ActionButtonContract

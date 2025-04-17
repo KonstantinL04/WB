@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -20,6 +21,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $topic_review_id
  * @property string|null $response
  * @property string|null $status
+ * @property Carbon|null $created_date
+ * @property ARRAY|null $published_date
+ * @property int|null $user_id
  * 
  * @property Product $product
  * @property QuestionsTopic|null $questions_topic
@@ -33,7 +37,10 @@ class Question extends Model
 
 	protected $casts = [
 		'product_id' => 'int',
-		'topic_review_id' => 'int'
+		'topic_review_id' => 'int',
+		'created_date' => 'datetime',
+		'published_date' => 'ARRAY',
+		'user_id' => 'int'
 	];
 
 	protected $fillable = [
@@ -44,7 +51,10 @@ class Question extends Model
 		'sentiment',
 		'topic_review_id',
 		'response',
-		'status'
+		'status',
+		'created_date',
+		'published_date',
+		'user_id'
 	];
 
 	public function product()

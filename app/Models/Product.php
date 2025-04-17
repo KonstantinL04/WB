@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $nm_id
  * @property string $name
  * @property string|null $category
- * @property string|null $characteristiс
+ * @property string|null $characteristics
  * @property string|null $description
  *
  * @property Shop $shop
@@ -34,7 +34,7 @@ class Product extends Model
 	protected $casts = [
 		'shop_id' => 'int',
 		'nm_id' => 'int',
-		'characteristiс' => 'json'
+		'characteristics' => 'json'
 	];
 
 	protected $fillable = [
@@ -42,7 +42,7 @@ class Product extends Model
 		'nm_id',
 		'name',
 		'category',
-		'characteristiс',
+		'characteristics',
 		'description'
 	];
 

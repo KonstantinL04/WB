@@ -16,11 +16,14 @@ use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\QueryTags\QueryTag;
 use MoonShine\Laravel\Resources\ModelResource;
+use MoonShine\Support\AlpineJs;
+use MoonShine\Support\Enums\JsEvent;
 use MoonShine\Support\Enums\SortDirection;
 use MoonShine\Support\Enums\ToastType;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\Layout\Box;
+use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\ID;
 use MoonShine\Contracts\UI\FieldContract;
@@ -29,6 +32,8 @@ use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Preview;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
+use MoonShine\UI\Fields\Textarea;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @extends ModelResource<Review>
@@ -39,6 +44,7 @@ class ReviewResource extends ModelResource
 
     protected string $title = 'Отзывы';
     protected SortDirection $sortDirection = SortDirection::ASC;
+//    protected bool $detailInModal = true;
 
     protected function activeActions(): ListOf
     {
@@ -96,6 +102,7 @@ class ReviewResource extends ModelResource
     {
         return [
             Date::make('Дата отзыва', 'created_date')->sortable()
+                ->badge()
                 ->format('d.m.Y'),
             Text::make('Наименование товара', 'product.name')
                 ->sortable(function ($query, string $direction) {
@@ -165,33 +172,50 @@ class ReviewResource extends ModelResource
     {
         return [
             Box::make([
-                Text::make('Наименование товара', 'product.name')
-                    ->locked(),
-                Text::make('Определенная тематика', 'review_topic.name_topic')
-                    ->locked(),
-                Text::make('Сформированный ответ', 'response'),
-                Number::make('Оценка', 'evaluation')
-                    ->stars()
-                    ->min(1)
-                    ->max(5)
-                    ->locked(),
-                Text::make('~ Комментарий', 'comment_text')
-                    ->locked(),
-                Text::make('+ Достоинства', 'pluses')
-                    ->locked(),
-                Text::make('- Недостатки', 'cons')
-                    ->locked(),
-                Text::make('Клиент', 'name_user')
-                    ->locked(),
+                Column::make([
+                    Preview::make('Тональность', 'sentiment')
+                        ->badge(fn($sentiment) => match ($sentiment) {
+                            'положительная' => 'green',
+                            'нейтральная' => 'yellow',
+                            'отрицательная' => 'red',
+                            default => 'gray',
+                        })
+                        ->sortable(),
+                    Preview::make('Определенная тематика', 'review_topic.name_topic')
+                        ->badge('purple'),
+                    Preview::make('Наименование товара', 'product.name'),
+                    Textarea::make('Сформированный ответ', 'response'),
+                    Number::make('Оценка', 'evaluation')
+                        ->stars()
+                        ->min(1)
+                        ->max(5)
+                        ->step(1)
+                        ->readonly(),
+                    Preview::make('+ Достоинства', 'pluses')
+                        ->badge('green'),
+                    Preview::make('- Недостатки', 'cons')
+                        ->badge('red'),
+                    Preview::make('~ Комментарий', 'comment_text')
+                        ->badge('yellow'),
+                    Preview::make('Клиент', 'name_user'),
 //            Text::make('Фото', 'photos'),
 //            Text::make('Видео', 'videos'),
-                Text::make('Артикул', 'product.nm_id')
-                    ->locked(),
-                Text::make('Статус', 'status')
-                    ->locked(),
-                Date::make('Дата оставления', 'created_date')->sortable()
-                    ->format('d.m.Y')
-                    ->locked(),
+                    Preview::make('Артикул', 'product.nm_id'),
+                    Date::make('Дата отзыва', 'created_date')->sortable()
+                        ->badge()
+                        ->format('d.m.Y')
+                        ->readonly(),
+                    Preview::make('Статус', 'status')
+                        ->badge(fn($status) => match ($status) {
+                            'Сформирован' => 'yellow',
+                            'Новый' => 'purple',
+                            'Опубликован' => 'green',
+                            default => 'gray',
+                        })
+                        ->sortable(),
+                ])->columnSpan(4)
+
+
             ])
         ];
     }
@@ -203,22 +227,45 @@ class ReviewResource extends ModelResource
     protected function detailFields(): iterable
     {
         return [
+            Preview::make('Тональность', 'sentiment')
+                ->badge(fn($sentiment) => match ($sentiment) {
+                    'положительная' => 'green',
+                    'нейтральная' => 'yellow',
+                    'отрицательная' => 'red',
+                    default => 'gray',
+                })
+                ->sortable(),
+            Text::make('Определенная тематика', 'review_topic.name_topic')
+                ->badge('purple'),
             Text::make('Наименование товара', 'product.name'),
-            Text::make('Определенная тематика', 'review_topic.name_topic'),
             Text::make('Сформированный ответ', 'response'),
             Number::make('Оценка', 'evaluation')
                 ->stars()
                 ->min(1)
                 ->max(5)
                 ->step(1),
-            Text::make('~ Комментарий', 'comment_text'),
-            Text::make('+ Достоинства', 'pluses'),
-            Text::make('- Недостатки', 'cons'),
+            Text::make('+ Достоинства', 'pluses')
+                ->badge('green'),
+            Text::make('- Недостатки', 'cons')
+                ->badge('red'),
+            Text::make('~ Комментарий', 'comment_text')
+                ->badge('yellow'),
             Text::make('Клиент', 'name_user'),
 //            Text::make('Фото', 'photos'),
 //            Text::make('Видео', 'videos'),
             Text::make('Артикул', 'product.nm_id'),
-            Text::make('Статус', 'status'),
+            Date::make('Дата отзыва', 'created_date')->sortable()
+                ->badge()
+                ->format('d.m.Y'),
+            Preview::make('Статус', 'status')
+                ->badge(fn($status) => match ($status) {
+                    'Сформирован' => 'yellow',
+                    'Новый' => 'purple',
+                    'Опубликован' => 'green',
+                    default => 'gray',
+                })
+                ->sortable(),
+
 
         ];
     }
@@ -227,9 +274,21 @@ class ReviewResource extends ModelResource
     {
         return parent::detailButtons()
             ->add(
+                ActionButton::make('Сгенерировать ответ')
+                    ->method('chatGPTHandler')
+                    ->icon('s.play')
+                    ->canSee(fn($item) => $item->status === 'Новый')
+                    ->withConfirm(
+                        title: 'Подтверждение',
+                        content: 'Вы действительно хотите сгенерировать ответ для данного отзыва?',
+                        button: 'Сгенерировать'
+                    )
+            )
+            ->add(
                 ActionButton::make('Опубликовать ответ')
                     ->method('publishAnswer')
-                    ->icon('s.play')
+                    ->icon('s.arrow-up-circle')
+                    ->canSee(fn($item) => $item->status === 'Сформирован')
                     ->withConfirm(
                         title: 'Подтверждение',
                         content: 'Вы действительно хотите опубликовать ответ для данного отзыва?',
@@ -248,14 +307,58 @@ class ReviewResource extends ModelResource
     {
         return [];
     }
-    protected function handlers(): ListOf
-    {
-        return parent::handlers()
-            ->add(new GetFeedBacks('Получить отзывы'))
-            ->add(new ChatGPTHandler('Сгенерировать ответы'));
 
+    protected function topButtons(): ListOf
+    {
+        return parent::topButtons()
+            ->add(
+                ActionButton::make('Получить отзывы')
+                    ->method('getFeedBacks')
+                    ->icon('s.arrow-down-circle')
+                    ->primary()
+                    ->withConfirm(
+                        title: 'Подтверждение',
+                        content: 'Вы действительно хотите получить новые отзывы?',
+                        button: 'Получить'
+                    )
+            )
+            ->add(
+                ActionButton::make('Сгенерировать ответы')
+                    ->method('getChatGPT')
+                    ->icon('s.play')
+                    ->withConfirm(
+                        title: 'Подтверждение',
+                        content: 'Вы действительно хотите сгенерировать ответы для всех отзывов?',
+                        button: 'Сгенерировать'
+                    )
+            )
+            ->add(
+                ActionButton::make('', '#')
+                    ->dispatchEvent(AlpineJs::event(JsEvent::TABLE_UPDATED, $this->getListComponentName()))
+                ->icon('s.arrow-path')
+            );
+    }
+//    protected function handlers(): ListOf
+//    {
+//        return parent::handlers()
+//            ->add(new GetFeedBacks('Получить отзывы'))
+//            ->add(new ChatGPTHandler('Сгенерировать ответы'));
+//
+//    }
+
+    public function getFeedBacks(MoonShineRequest $request): Response
+    {
+        // Создаём экземпляр класса GetFeedBacks и вызываем его метод handle()
+        $handler = new GetFeedBacks('Импортировать отзывы');
+        return $handler->handle();
     }
 
+    public function getChatGPT(MoonShineRequest $request): Response
+    {
+        // Создаём экземпляр класса GetFeedBacks и вызываем его метод handle()
+        $handler = new ChatGPTHandler('Начать формирование');
+        return $handler->handle();
+    }
     public function chatGPTHandler(MoonShineRequest $request): MoonShineJsonResponse
     {
         /** @var Review $review */
