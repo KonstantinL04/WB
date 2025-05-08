@@ -25,7 +25,6 @@ use MoonShine\UI\Fields\Text;
 class UserResource extends ModelResource
 {
     protected string $model = User::class;
-
     protected string $title = 'Пользователи';
 
     /**
@@ -36,6 +35,7 @@ class UserResource extends ModelResource
         return [
             ID::make()->sortable(),
             Text::make('Имя', 'name'),
+            Text::make('Роль', 'role_id'),
             Email::make('Почта', 'email'),
         ];
     }

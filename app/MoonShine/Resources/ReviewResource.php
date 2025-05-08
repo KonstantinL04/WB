@@ -76,6 +76,23 @@ class ReviewResource extends ModelResource
                     }
                 }),
 
+            Select::make('Тематика', 'topic_review_id')
+                ->options(static function () {
+                    // Извлекаем список всех тематик из таблицы вопросов тем
+                    // Предполагается, что модель QuestionsTopic содержит поля id и name_topic
+                    return \App\Models\ReviewTopic::query()
+                        ->select('name_topic', 'id')
+                        ->pluck('name_topic', 'id')
+                        ->toArray();
+                })
+                ->multiple()
+                ->nullable()
+                ->onApply(static function (Builder $query, mixed $value, Select $field) {
+                    if (!empty($value)) {
+                        $query->whereIn('topic_review_id', (array)$value);
+                    }
+                }),
+
             Select::make('Статус', 'status')
                 ->options(static function () {
                     // Извлекаем уникальные значения поля sentiment из таблицы reviews
@@ -109,13 +126,11 @@ class ReviewResource extends ModelResource
                 ->sortable(function ($query, string $direction) {
                     // Гарантируем, что направление сортировки будет либо "asc", либо "desc":
                     $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
-
                     // Используем leftJoin для корректного выбора и сортировки:
                     $query->leftJoin('products', 'products.id', '=', 'reviews.product_id')
                         ->orderBy('products.name', $direction)
                         ->select('reviews.*');
-                }),
-            Number::make('Оценка', 'evaluation')->sortable()
+                }), Number::make('Оценка', 'evaluation')->sortable()
                 ->stars()
                 ->min(1)
                 ->max(5),
@@ -144,7 +159,7 @@ class ReviewResource extends ModelResource
             ->prepend(
                 ActionButton::make('')
                     ->canSee(fn($item) => $item->status === 'Новый')
-                    ->method('chatGPTHandler') // вызываем нужный обработчик, например ChatGPTReviewHandler
+                    ->method('chatGPTReviewHandler') // вызываем нужный обработчик, например ChatGPTReviewHandler
                     ->icon('s.play')
                     ->withConfirm(
                         title: 'Подтверждение',
@@ -186,12 +201,7 @@ class ReviewResource extends ModelResource
                         ->badge('purple'),
                     Preview::make('Наименование товара', 'product.name'),
                     Textarea::make('Сформированный ответ', 'response'),
-                    Number::make('Оценка', 'evaluation')
-                        ->stars()
-                        ->min(1)
-                        ->max(5)
-                        ->step(1)
-                        ->readonly(),
+                    Preview::make('Оценка', 'evaluation'),
                     Preview::make('+ Достоинства', 'pluses')
                         ->badge('green'),
                     Preview::make('- Недостатки', 'cons')
@@ -226,7 +236,7 @@ class ReviewResource extends ModelResource
     protected function detailFields(): iterable
     {
         return [
-            Preview::make('Тональность', 'sentiment')
+            Text::make('Тональность', 'sentiment')
                 ->badge(fn($sentiment) => match ($sentiment) {
                     'положительная' => 'green',
                     'нейтральная' => 'yellow',
@@ -256,7 +266,7 @@ class ReviewResource extends ModelResource
             Date::make('Дата отзыва', 'created_date')->sortable()
                 ->badge()
                 ->format('d.m.Y'),
-            Preview::make('Статус', 'status')
+            Text::make('Статус', 'status')
                 ->badge(fn($status) => match ($status) {
                     'Сформирован' => 'yellow',
                     'Новый' => 'purple',
@@ -371,10 +381,38 @@ class ReviewResource extends ModelResource
 
         return MoonShineJsonResponse::make()->toast('Ответ успешно сгенерирован', ToastType::SUCCESS);
     }
-    public function publishAnswer(MoonShineRequest $request)
+    public function publishAnswer(MoonShineRequest $request): MoonShineJsonResponse
     {
-        // Создаём и запускаем Handler
-        $handler = new PublishResponseReviews('Опубликовать ответ');
-        return $handler->handle();
+        /** @var Review $review */
+        $review = $request->getResource()->getItem();
+
+        $reviewId = $review->review_id; // Убедитесь, что это поле есть в БД и заполнено
+        $replyText = $review->response; // Ответ, который сгенерировала нейросеть или ввёл пользователь
+
+        if (empty($reviewId) || empty($replyText)) {
+            return MoonShineJsonResponse::make()->toast('Нет ID отзыва или текста ответа', ToastType::ERROR);
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . config('services.wildberries.token'),
+            'Content-Type' => 'application/json',
+        ])->post('https://feedbacks-api.wildberries.ru/api/v1/feedbacks/answer', [
+            'id' => $reviewId,
+            'text' => $replyText,
+        ]);
+
+        if ($response->successful()) {
+            $review->status = 'Опубликован';
+            $review->save();
+
+            return MoonShineJsonResponse::make()->toast('Ответ опубликован успешно!', ToastType::SUCCESS);
+        }
+
+        Log::error('Ошибка при публикации ответа на WB', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        return MoonShineJsonResponse::make()->toast('Ошибка при отправке ответа', ToastType::ERROR);
     }
 }
