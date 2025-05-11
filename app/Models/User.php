@@ -7,7 +7,6 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -24,8 +23,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $role_id
  * 
  * @property MoonshineUserRole|null $moonshine_user_role
- * @property Collection|Shop[] $shops
- * @property Collection|Review[] $reviews
  *
  * @package App\Models
  */
@@ -55,16 +52,5 @@ class User extends Model
 	public function moonshine_user_role()
 	{
 		return $this->belongsTo(MoonshineUserRole::class, 'role_id');
-	}
-
-	public function shops()
-	{
-		return $this->belongsToMany(Shop::class, 'shop_users')
-					->withPivot('id');
-	}
-
-	public function reviews()
-	{
-		return $this->hasMany(Review::class);
 	}
 }

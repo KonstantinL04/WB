@@ -6,7 +6,10 @@ namespace App\MoonShine\Handlers;
 
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\Shop;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use MoonShine\Support\Enums\ToastType;
 use MoonShine\UI\Components\Modal;
@@ -43,7 +46,15 @@ class GetFeedBacks extends Handler
             'isAnswered' => false, // Отбираем необработанные отзывы
         ];
 
-        $response = Http::withToken(config('services.wildberries.token'))
+        $user = auth()->user();
+
+        $activeShop = $user->active_shop_id
+            ? Shop::findOrFail($user->active_shop_id)
+            : $user->shops()->where('is_active', true)->firstOrFail();
+//        $activeShop = auth()->user()->shops()->where('is_active', true)->firstOrFail();
+//        $apiKey = Crypt::decryptString($activeShop->api_key);
+        $apiKey = $activeShop->api_key;
+        $response = Http::withToken($apiKey)
             ->get('https://feedbacks-api.wildberries.ru/api/v1/feedbacks/count', $queryParams);
 
         if (!$response->successful()) {
@@ -81,13 +92,34 @@ class GetFeedBacks extends Handler
             'order'      => 'dateDesc',    // Сортировка: dateAsc или dateDesc
         ];
 
-        $response = Http::withToken(config('services.wildberries.token'))
+        $user = auth()->user();
+
+        $activeShop = $user->active_shop_id
+            ? Shop::findOrFail($user->active_shop_id)
+            : $user->shops()->where('is_active', true)->firstOrFail();
+//        $activeShop = auth()->user()->shops()->where('is_active', true)->firstOrFail();
+//        $apiKey = Crypt::decryptString($activeShop->api_key);
+        $apiKey = $activeShop->api_key;
+        $response = Http::withToken($apiKey)
             ->get('https://feedbacks-api.wildberries.ru/api/v1/feedbacks', $queryParams);
 
         if (!$response->successful()) {
-            MoonShineUI::toast('Ошибка при получении данных', ToastType::ERROR);
+            // Логируем подробности ответа
+            \Illuminate\Support\Facades\Log::error('WB Feedbacks API error', [
+                'status' => $response->status(),
+                'headers' => $response->headers(),
+                'body' => $response->body(),
+            ]);
+
+            // Показываем юзеру и в UI информацию о коде ошибки
+            MoonShineUI::toast(
+                "Ошибка при получении данных: HTTP {$response->status()}",
+                ToastType::ERROR
+            );
+
             return back();
         }
+
 
         $jsonData = $response->json();
 
@@ -111,7 +143,7 @@ class GetFeedBacks extends Handler
             $product = Product::firstOrCreate(
                 ['nm_id' => $feedback['productDetails']['nmId']],
                 [
-                    'shop_id'       => 1,
+                    'shop_id'       => $activeShop->id,
                     'name'          => $feedback['productDetails']['productName'] ?? 'Без названия',
                     'category'      => $feedback['subjectName'] ?? null,
                     'characteristic'=> null,

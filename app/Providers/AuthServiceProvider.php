@@ -13,18 +13,22 @@ use App\Policies\ReviewPolicy;
 use App\Policies\ShopPolicy;
 use Illuminate\Support\ServiceProvider;
 
-class AppServiceProvider extends ServiceProvider
+class AuthServiceProvider extends ServiceProvider
 {
+    /**
+     * Register services.
+     */
     /**
      * Маппинг моделей к политикам.
      *
      * @var array<class-string, class-string>
      */
-    protected $policies = [
+    protected array $policies = [
         Shop::class => ShopPolicy::class,
         Review::class => ReviewPolicy::class,
         Question::class => QuestionPolicy::class,
         MoonShineUser::class => MoonShineUserPolicy::class,
+
         // ... другие политики
     ];
 
@@ -37,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Bootstrap any application services.
+     * Bootstrap services.
      */
     public function boot(): void
     {

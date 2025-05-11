@@ -45,11 +45,31 @@ use Symfony\Component\HttpFoundation\Response;
 class QuestionResource extends ModelResource
 {
     protected string $model = Question::class;
+    protected bool $columnSelection = true;
+
 
     protected string $title = 'Вопросы';
+    protected bool $withPolicy = true;
+
     protected SortDirection $sortDirection = SortDirection::ASC;
 
 
+    protected function modifyQueryBuilder(Builder $builder): Builder
+    {
+        // Админ видит всё
+        if (auth()->user()->moonshine_user_role->name === 'Админ') {
+            return $builder;
+        }
+
+        $user = auth()->user();
+
+        // Определяем, откуда взять ID активного магазина
+        $shopId = $user->active_shop_id
+            ?? $user->shops()->where('is_active', true)->value('id');
+
+        // Фильтруем вопросы по товарам этого магазина
+        return $builder->whereHas('product', fn($q) => $q->where('shop_id', $shopId));
+    }
     protected function activeActions(): ListOf
     {
         return parent::activeActions()

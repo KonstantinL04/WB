@@ -50,7 +50,7 @@ return [
         'password' => 'Пароль',
     ],
     'resource' => [
-        'system' => 'Система',
+        'system' => 'Настройки',
         'role' => 'Роли',
         'name' => 'Имя',
         'email' => 'E-mail',
@@ -58,7 +58,7 @@ return [
         'repeat_password' => 'Повторите пароль',
         'avatar' => 'Аватар',
         'created_at' => 'Дата создания',
-        'admins_title' => 'Администраторы',
+        'admins_title' => 'Сотрудники',
         'role_title' => 'Роли',
         'role_name' => 'Название',
 

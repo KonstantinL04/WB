@@ -16,9 +16,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $user_id
  * @property string $name
  * @property string $api_key
+ * @property bool|null $is_active
  * 
- * @property User $user
- * @property Collection|User[] $users
+ * @property MoonshineUser $moonshine_user
+ * @property Collection|MoonshineUser[] $moonshine_users
  * @property Collection|Product[] $products
  *
  * @package App\Models
@@ -29,24 +30,25 @@ class Shop extends Model
 	public $timestamps = false;
 
 	protected $casts = [
-		'user_id' => 'int'
+		'user_id' => 'int',
+		'is_active' => 'bool'
 	];
 
 	protected $fillable = [
 		'user_id',
 		'name',
-		'api_key'
+		'api_key',
+		'is_active'
 	];
 
-	public function user()
+	public function moonshine_user()
 	{
-		return $this->belongsTo(User::class);
+		return $this->belongsTo(MoonshineUser::class, 'user_id');
 	}
 
-	public function users()
+	public function moonshine_users()
 	{
-		return $this->belongsToMany(User::class, 'shop_users')
-					->withPivot('id');
+		return $this->hasMany(MoonshineUser::class, 'active_shop_id');
 	}
 
 	public function products()

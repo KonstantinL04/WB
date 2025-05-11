@@ -7,7 +7,9 @@ namespace App\MoonShine\Handlers;
 use App\Models\Product;
 use App\Models\Question;
 use App\Models\Review;
+use App\Models\Shop;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use MoonShine\Support\Enums\ToastType;
@@ -42,8 +44,15 @@ class GetQuestions extends Handler
             'isAnswered' => false, // Отбираем необработанные вопросы
         ];
 
-        // Предполагаем, что API для вопросов предоставляет endpoint "/questions/count"
-        $response = Http::withToken(config('services.wildberries.token'))
+        $user = auth()->user();
+
+        $activeShop = $user->active_shop_id
+            ? Shop::findOrFail($user->active_shop_id)
+            : $user->shops()->where('is_active', true)->firstOrFail();
+//        $activeShop = auth()->user()->shops()->where('is_active', true)->firstOrFail();
+//        $apiKey = Crypt::decryptString($activeShop->api_key);
+        $apiKey = $activeShop->api_key;
+        $response = Http::withToken($apiKey)
             ->get('https://feedbacks-api.wildberries.ru/api/v1/questions/count', $queryParams);
 
         if (!$response->successful()) {
@@ -81,8 +90,15 @@ class GetQuestions extends Handler
             'order'      => 'dateDesc',  // Сортировка: dateAsc или dateDesc
         ];
 
-        // Получаем вопросы из API Wildberries, используя API-ключ из конфигурации
-        $response = Http::withToken(config('services.wildberries.token'))
+        $user = auth()->user();
+
+        $activeShop = $user->active_shop_id
+            ? Shop::findOrFail($user->active_shop_id)
+            : $user->shops()->where('is_active', true)->firstOrFail();
+//        $activeShop = auth()->user()->shops()->where('is_active', true)->firstOrFail();
+//        $apiKey = Crypt::decryptString($activeShop->api_key);
+        $apiKey = $activeShop->api_key;
+        $response = Http::withToken($apiKey)
             ->get('https://feedbacks-api.wildberries.ru/api/v1/questions', $queryParams);
 
         if (!$response->successful()) {
@@ -112,7 +128,7 @@ class GetQuestions extends Handler
             $product = Product::firstOrCreate(
                 ['nm_id' => $feedback['productDetails']['nmId']],
                 [
-                    'shop_id'       => 1,
+                    'shop_id'       => $activeShop->id,
                     'name'          => $feedback['productDetails']['productName'] ?? 'Без названия',
                     'category'      => $feedback['subjectName'] ?? null,
                     'characteristic'=> null,

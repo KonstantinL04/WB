@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Layouts;
 
+use App\MoonShine\Resources\MoonShineUserResource;
 use MoonShine\Laravel\Layouts\AppLayout;
 use MoonShine\ColorManager\ColorManager;
 use MoonShine\Contracts\ColorManager\ColorManagerContract;
@@ -36,6 +37,7 @@ use App\MoonShine\Resources\ReviewResource;
 use App\MoonShine\Resources\ShopResource;
 use App\MoonShine\Resources\UserResource;
 use App\MoonShine\Resources\QuestionResource;
+use App\MoonShine\Resources\ProductResource;
 
 final class MoonShineLayout extends AppLayout
 {
@@ -53,11 +55,23 @@ final class MoonShineLayout extends AppLayout
              ->icon('chat-bubble-bottom-center-text'),
             MenuItem::make('Вопросы', QuestionResource::class)
             ->icon('question-mark-circle'),
+            MenuItem::make('Товары', ProductResource::class)
+                ->icon('rectangle-stack'),
             MenuItem::make('Магазины', ShopResource::class)
-            ->icon('shopping-bag'),
-            MenuItem::make('Пользователи', UserResource::class)
-            ->icon('user-group'),
-            ...parent::menu(),
+            ->icon('building-storefront')
+                ->canSee(fn() => in_array(
+                    auth()->user()->moonshine_user_role->name,
+                    ['Админ', 'Продавец'],
+                    true
+                )),
+            MenuItem::make('Пользователи', MoonShineUserResource::class)
+                ->icon('users')
+                ->canSee(fn() => in_array(
+                    auth()->user()->moonshine_user_role->name,
+                    ['Админ', 'Продавец'],
+                    true
+                )),
+
         ];
     }
 
@@ -67,7 +81,7 @@ final class MoonShineLayout extends AppLayout
     protected function colors(ColorManagerContract $colorManager): void
     {
         parent::colors($colorManager);
-
+//        $colorManager->background('#00000');
         // $colorManager->primary('#00000');
     }
 

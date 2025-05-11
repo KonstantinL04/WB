@@ -22,11 +22,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $response
  * @property string|null $status
  * @property Carbon|null $created_date
- * @property ARRAY|null $published_date
+ * @property Carbon|null $published_date
  * @property int|null $user_id
  *
  * @property Product $product
  * @property QuestionsTopic|null $questions_topic
+ * @property MoonshineUser|null $moonshine_user
  *
  * @package App\Models
  */
@@ -65,5 +66,10 @@ class Question extends Model
 	public function questions_topic()
 	{
 		return $this->belongsTo(QuestionsTopic::class, 'topic_review_id');
+	}
+
+	public function moonshine_user()
+	{
+		return $this->belongsTo(MoonshineUser::class, 'user_id');
 	}
 }

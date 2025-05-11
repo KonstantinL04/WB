@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\MoonshineUser;
+
 return [
 
     /*
@@ -36,9 +38,9 @@ return [
     */
 
     'guards' => [
-        'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
+        'moonshine' => [
+            'driver'   => 'session',
+            'provider' => 'moonshine_users',
         ],
     ],
 
@@ -60,17 +62,11 @@ return [
     */
 
     'providers' => [
-        'users' => [
+        'moonshine_users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model'  => MoonshineUser::class,
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
-
     /*
     |--------------------------------------------------------------------------
     | Resetting Passwords
