@@ -56,7 +56,7 @@ final class MoonShineLayout extends AppLayout
             MenuItem::make('Вопросы', QuestionResource::class)
             ->icon('question-mark-circle'),
             MenuItem::make('Товары', ProductResource::class)
-                ->icon('rectangle-stack'),
+                ->icon('inbox-stack'),
             MenuItem::make('Магазины', ShopResource::class)
             ->icon('building-storefront')
                 ->canSee(fn() => in_array(

@@ -34,6 +34,7 @@ use MoonShine\UI\Fields\Preview;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Textarea;
+use MoonShine\UI\Fields\Url;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -78,6 +79,7 @@ class ReviewResource extends ModelResource
     protected function filters(): iterable
     {
         return [
+
             Select::make('Тональность', 'sentiment')
                 ->options(static function () {
                     // Извлекаем уникальные значения поля sentiment из таблицы reviews
@@ -139,9 +141,16 @@ class ReviewResource extends ModelResource
     protected function indexFields(): iterable
     {
         return [
+
             Date::make('Дата отзыва', 'created_date')->sortable()
                 ->badge()
                 ->format('d.m.Y'),
+            Url::make('Фото', 'product.image')
+                // В качестве «текста» ссылки выводим тег <img>
+                ->title(fn(string $url) => "<img src='{$url}' style='max-width:40px;' alt=''>")
+                // ссылка откроется в новой вкладке
+                ->blank(),
+            Textarea::make('Отзыв', 'comment_text'),
             Text::make('Наименование товара', 'product.name')
                 ->sortable(function ($query, string $direction) {
                     // Гарантируем, что направление сортировки будет либо "asc", либо "desc":
@@ -154,6 +163,7 @@ class ReviewResource extends ModelResource
                 ->stars()
                 ->min(1)
                 ->max(5),
+
             Preview::make('Тональность', 'sentiment')
                 ->badge(fn($sentiment) => match ($sentiment) {
                     'положительная' => 'green',
@@ -344,6 +354,7 @@ class ReviewResource extends ModelResource
                 ActionButton::make('Получить отзывы')
                     ->method('getFeedBacks')
                     ->icon('s.arrow-down-circle')
+                    ->canSee(fn() => Review::count() === 0)
                     ->primary()
                     ->withConfirm(
                         title: 'Подтверждение',

@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $updated_at
  * 
  * @property Collection|MoonshineUser[] $moonshine_users
- * @property Collection|User[] $users
  *
  * @package App\Models
  */
@@ -34,10 +33,5 @@ class MoonshineUserRole extends Model
 	public function moonshine_users()
 	{
 		return $this->hasMany(MoonshineUser::class);
-	}
-
-	public function users()
-	{
-		return $this->hasMany(User::class, 'role_id');
 	}
 }

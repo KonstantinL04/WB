@@ -52,7 +52,7 @@ class PublishResponseQuestions extends Handler
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . config('services.wildberries.token'),
             'Content-Type'  => 'application/json',
-        ])->patch('https://feedbacks-api.wildberries.ru/api/v1/questions', [
+        ])->post('https://feedbacks-api.wildberries.ru/api/v1/questions', [
             'id'        => $questionId,
             'text'      => $replyText,
             'wasViewed' => true,

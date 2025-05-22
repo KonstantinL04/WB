@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class GetFeedBacks extends Handler
 {
+    protected int $batchSize = 30;
     public function __construct(string $label = 'Импортировать отзывы')
     {
         parent::__construct($label);
@@ -51,8 +52,6 @@ class GetFeedBacks extends Handler
         $activeShop = $user->active_shop_id
             ? Shop::findOrFail($user->active_shop_id)
             : $user->shops()->where('is_active', true)->firstOrFail();
-//        $activeShop = auth()->user()->shops()->where('is_active', true)->firstOrFail();
-//        $apiKey = Crypt::decryptString($activeShop->api_key);
         $apiKey = $activeShop->api_key;
         $response = Http::withToken($apiKey)
             ->get('https://feedbacks-api.wildberries.ru/api/v1/feedbacks/count', $queryParams);
@@ -83,7 +82,10 @@ class GetFeedBacks extends Handler
     public function handle(): Response
     {
         // Получаем количество отзывов для импорта из переданных данных, по умолчанию 20
-        $reviewsCount = (int) request()->input('feedback_count', 30);
+        $reviewsCount = (int) request()->input(
+            'feedback_count',
+            $this->getAvailableCount()
+        );
 
         $queryParams = [
             'isAnswered' => false,       // Обрабатываем необработанные отзывы
@@ -97,8 +99,6 @@ class GetFeedBacks extends Handler
         $activeShop = $user->active_shop_id
             ? Shop::findOrFail($user->active_shop_id)
             : $user->shops()->where('is_active', true)->firstOrFail();
-//        $activeShop = auth()->user()->shops()->where('is_active', true)->firstOrFail();
-//        $apiKey = Crypt::decryptString($activeShop->api_key);
         $apiKey = $activeShop->api_key;
         $response = Http::withToken($apiKey)
             ->get('https://feedbacks-api.wildberries.ru/api/v1/feedbacks', $queryParams);
@@ -155,6 +155,25 @@ class GetFeedBacks extends Handler
                 continue;
             }
 
+            if (! empty($feedback['photoLinks']) && is_array($feedback['photoLinks'])) {
+                // Берём только fullSize
+                $fullSizeUrls = array_map(
+                    fn(array $link): string => $link['fullSize'] ?? '',
+                    $feedback['photoLinks']
+                );
+
+                // Удаляем пустые строки (если какие‑то записаны без fullSize)
+                $fullSizeUrls = array_filter($fullSizeUrls);
+
+                // Кодируем в JSON для хранения
+                $photosJson = json_encode(
+                    array_values($fullSizeUrls),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
+            } else {
+                $photosJson = null;
+            }
+
             // Импортируем отзыв, используя внешний ключ product_id
             Review::updateOrCreate(
                 ['review_id' => $feedback['id']],
@@ -162,9 +181,7 @@ class GetFeedBacks extends Handler
                     'product_id'     => $product->id,
                     'evaluation'     => $feedback['productValuation'] ?? null,
                     'name_user'      => $feedback['userName'] ?? null,
-                    'photos'         => isset($feedback['photoLinks'])
-                        ? json_encode($feedback['photoLinks'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-                        : null,
+                    'photos'       => $photosJson,
                     'videos'         => $feedback['video'] ?? null,
                     'sentiment'      => null,
                     'topic_review_id'=> null,
@@ -176,9 +193,101 @@ class GetFeedBacks extends Handler
                     'created_date'   => isset($feedback['createdDate']) ? Carbon::parse($feedback['createdDate']) : null,
                 ]
             );
+            $importedNmIds[] = $feedback['productDetails']['nmId'];
+
         }
+        $nmIds = array_values(array_unique($importedNmIds));
+        $this->updateProductCards($nmIds);
         MoonShineUI::toast('Отзывы успешно импортированы', ToastType::SUCCESS);
         return back();
+    }
+
+    protected function updateProductCards(array $nmIds): void
+    {
+        $apiKey = $this->getActiveShopApiKey();
+
+        // Разбиваем на батчи по 100
+        foreach (array_chunk($nmIds, 100) as $batch) {
+            $response = Http::withHeaders([
+                'Authorization' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post('https://content-api.wildberries.ru/content/v2/get/cards/list', [
+                'settings' => [
+                    'filter' => ['withPhoto' => -1],
+                    'cursor' => ['limit' => 100],
+                ],
+                'imtIDs' => [],       // опционально
+                'nmIDs'  => $batch,   // важно
+            ]);
+
+            if (! $response->successful()) {
+                Log::error('Ошибка при получении карточек WB', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+                continue;
+            }
+
+            $data = $response->json('cards', []);
+
+            foreach ($data as $card) {
+                // Ищем локальный товар
+                $product = Product::where('nm_id', $card['nmID'])->first();
+                if (! $product) {
+                    continue;
+                }
+                // Оригинальные характеристики в JSON
+                $rawChars = $card['characteristics'] ?? [];
+                $charsJson = json_encode($rawChars, JSON_UNESCAPED_UNICODE);
+
+                // Пытаемся достать Цвет и Страну производства
+                $color = null;
+                $country = null;
+                foreach ($rawChars as $item) {
+                    // Название точь‑в‑точь как приходит из API
+                    if (isset($item['name'], $item['value'][0])) {
+                        switch ($item['name']) {
+                            case 'Цвет':
+                                $color = $item['value'][0];
+                                break 2; // выходим из цикла, если нашли
+                        }
+                    }
+                }
+                foreach ($rawChars as $item) {
+                    if (isset($item['name'], $item['value'][0])) {
+                        if ($item['name'] === 'Страна производства') {
+                            $country = $item['value'][0];
+                            break;
+                        }
+                    }
+                }
+
+                // Обновляем поля модели
+                $product->update([
+                    'description'          => $card['description'] ?? null,
+                    'characteristics' => $charsJson,
+                    'image'                => $card['photos'][0]['big'] ?? null,
+                    'color'                => $color,
+                    'country_manufacture'  => $country,
+                ]);
+            }
+
+            // Если в ответе есть cursor и total > limit, надо повторить с новым курсором:
+            $cursor = $response->json('cursor');
+            if (! empty($cursor['updatedAt']) && $cursor['total'] > count($batch)) {
+                // Повторяем до получения всех — см. доку WB о пагинации
+            }
+        }
+    }
+
+    protected function getActiveShopApiKey(): string
+    {
+        $user = auth()->user();
+        $shop = $user->active_shop_id
+            ? Shop::findOrFail($user->active_shop_id)
+            : $user->shops()->where('is_active', true)->firstOrFail();
+
+        return $shop->api_key;
     }
     public function getButton(): ActionButtonContract
     {

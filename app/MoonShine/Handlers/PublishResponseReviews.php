@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MoonShine\Handlers;
 
 use App\Models\Review;
+use App\Models\Shop;
 use Illuminate\Support\Facades\Log;
 use MoonShine\Support\Enums\ToastType;
 use MoonShine\UI\Exceptions\ActionButtonException;
@@ -53,6 +54,13 @@ class PublishResponseReviews extends Handler
             MoonShineUI::toast('Нет ID отзыва или текста ответа', ToastType::ERROR);
             return;
         }
+
+        $user = auth()->user();
+
+        $activeShop = $user->active_shop_id
+            ? Shop::findOrFail($user->active_shop_id)
+            : $user->shops()->where('is_active', true)->firstOrFail();
+        $apiKey = $activeShop->api_key;
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . config('services.wildberries.token'),

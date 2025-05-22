@@ -37,6 +37,7 @@ use MoonShine\UI\Fields\Preview;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Textarea;
+use MoonShine\UI\Fields\Url;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -152,8 +153,12 @@ class QuestionResource extends ModelResource
                         ->orderBy('products.name', $direction)
                         ->select('questions.*');
                 }),
-//            Text::make('Вопрос', 'question')->sortable(),
-
+            Textarea::make('Вопрос', 'question')->sortable(),
+            Url::make('Фото', 'product.image')
+                // В качестве «текста» ссылки выводим тег <img>
+                ->title(fn(string $url) => "<img src='{$url}' style='max-width:40px;' alt=''>")
+                // ссылка откроется в новой вкладке
+                ->blank(),
             Preview::make('Тематика', 'questions_topic.name_topic')
                 ->sortable(function ($query, string $direction) {
                     // Гарантируем, что направление сортировки будет либо "asc", либо "desc":
@@ -167,6 +172,7 @@ class QuestionResource extends ModelResource
                 ->badge('purple'),
 //            Preview::make('Тема', 'questions_topic.name_topic')->sortable()
 //                ->badge('purple'),
+
             Preview::make('Тип', 'sentiment')
                 ->badge(fn($sentiment) => match ($sentiment) {
                     'Типовой' => 'green',
@@ -341,6 +347,7 @@ class QuestionResource extends ModelResource
                 ActionButton::make('Получить вопросы')
                     ->method('getQuestions')
                     ->icon('s.arrow-down-circle')
+                    ->canSee(fn() => Question::count() === 0)
                     ->primary()
                     ->withConfirm(
                         title: 'Подтверждение',

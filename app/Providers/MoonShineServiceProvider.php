@@ -22,6 +22,8 @@ use App\MoonShine\Pages\AnswerReviewPage;
 use App\MoonShine\Resources\QuestionResource;
 use MoonShine\Laravel\Enums\Ability;
 use App\MoonShine\Resources\ProductResource;
+use App\MoonShine\Pages\ProductDetailPage;
+use MoonShine\Laravel\Pages\Dashboard;
 
 class MoonShineServiceProvider extends ServiceProvider
 {
@@ -32,21 +34,6 @@ class MoonShineServiceProvider extends ServiceProvider
      */
     public function boot(CoreContract $core, ConfiguratorContract $config): void
     {
-//        $config->authorizationRules(
-//            function ($resource, MoonshineUser $user, Ability $ability, $item): bool {
-//                // Админ (роль = 'admin') — полный доступ
-//                if ($user->moonshine_user_role->name === 'Админ') {
-//                    return true;
-//                }
-//                // Менеджер может CREATE/VIEW/UPDATE своих, обычный — только VIEW_ANY и VIEW
-//                if ($user->moonshine_user_role->name === 'Продавец') {
-//                    return true;
-//                }
-//                // Обычный пользователь — только просмотр
-//                return in_array($ability, [Ability::VIEW_ANY, Ability::VIEW], true);
-//            }
-//        );
-
         $core
             ->resources([
                 MoonShineUserResource::class,
@@ -59,7 +46,9 @@ class MoonShineServiceProvider extends ServiceProvider
             ])
             ->pages([
                 ...$config->getPages(),
+                Dashboard::class,
                 AnswerReviewPage::class,
+                ProductDetailPage::class,
             ])
         ;
     }

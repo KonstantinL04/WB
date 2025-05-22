@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Models\MoonshineUser;
+use App\Models\Product;
 use App\Models\Question;
 use App\Models\Review;
 use App\Models\Shop;
 use App\MoonShine\Resources\MoonShineUserResource;
 use App\Policies\MoonShineUserPolicy;
+use App\Policies\ProductPolicy;
 use App\Policies\QuestionPolicy;
 use App\Policies\ReviewPolicy;
 use App\Policies\ShopPolicy;
@@ -28,6 +30,7 @@ class AuthServiceProvider extends ServiceProvider
         Review::class => ReviewPolicy::class,
         Question::class => QuestionPolicy::class,
         MoonShineUser::class => MoonShineUserPolicy::class,
+        Product::class => ProductPolicy::class,
 
         // ... другие политики
     ];

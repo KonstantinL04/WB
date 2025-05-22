@@ -19,6 +19,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $category
  * @property string|null $characteristics
  * @property string|null $description
+ * @property string|null $color
+ * @property string|null $gender
+ * @property string|null $country_manufacture
+ * @property string|null $image
  *
  * @property Shop $shop
  * @property Collection|Review[] $reviews
@@ -34,7 +38,7 @@ class Product extends Model
 	protected $casts = [
 		'shop_id' => 'int',
 		'nm_id' => 'int',
-		'characteristics' => 'json'
+		'characteristics' => 'json',
 	];
 
 	protected $fillable = [
@@ -43,7 +47,11 @@ class Product extends Model
 		'name',
 		'category',
 		'characteristics',
-		'description'
+		'description',
+		'color',
+		'country_manufacture',
+		'image',
+        'range_evaluation'
 	];
 
 	public function shop()
